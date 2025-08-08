@@ -31,8 +31,12 @@ app.post('/submit-contact', async (req, res) => {
             }],
         });
 
-        if (existingContact.results.length > 0) {
-            await hubspotClient.crm.objects.notes.basicApi.create(createNoteInput(existingContact.results[0].id, message));
+        if (existingContact?.results?.length > 0) {
+            const createdNote = await hubspotClient.crm.objects.notes.basicApi.create(createNoteInput(existingContact.results[0].id, message));
+            if (!createdNote) {
+                console.error('Failed to create note for existing contact');
+                return res.status(500).send('Error creating note for existing contact');
+            }
             res.redirect('/');
         }
         else {
