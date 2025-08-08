@@ -17,7 +17,90 @@ const hubspot = require('@hubspot/api-client');
 const hubspotClient = new hubspot.Client({ accessToken: PRIVATE_APP_ACCESS });
 
 app.get('/', async (req, res) => {
-    res.render('contact-form', { title: 'Contact Form | HubSpot CRM Integration' });
+    try {
+        const result = await hubspotClient.crm.schemas.coreApi.getById('p_quote_requests');
+        options = extractFormOptions(result);
+    }
+    catch (error) {
+        console.error('Error rendering quote form:', error);
+    }
+
+    res.render('quote-form', {
+        title: 'Quote Request | HubSpot CRM Integration',
+        options: options
+    });
+});
+
+app.post('/submit-quote', async (req, res) => {
+    const { firstName, lastName, email, size, stories, additionalInfo, location } = req.body;
+    try {
+        const existingContact = await getContactByEmail(email);
+
+        const quoteRequestProperties = {
+            stories: stories,
+            size: size,
+            details: additionalInfo,
+            location: location,
+            quote_request: "Quote request",
+        };
+
+        if (existingContact?.results?.length > 0) {
+            const quoteRequest = await hubspotClient.crm.objects.basicApi.create('p_quote_requests', {
+                properties: {
+                    ...quoteRequestProperties
+                },
+            });
+            console.log('Created quote request:', quoteRequest.id);
+            console.log('Existing contact ID:', existingContact.results[0].id);
+            await hubspotClient.crm.associations.v4.basicApi.create(
+                'contacts',
+                existingContact?.results[0].id,
+                'p_quote_requests',
+                quoteRequest?.id,
+                [
+                    {
+
+                        associationCategory: 'USER_DEFINED',
+                        associationTypeId: 36
+                    }
+                ]
+            );
+        }
+        else {
+            const contactInput = {
+                properties: {
+                    firstname: firstName,
+                    lastname: lastName,
+                    email: email
+                }
+            };
+
+            const newContact = await hubspotClient.crm.contacts.basicApi.create(contactInput);
+            const quoteRequest = await hubspotClient.crm.objects.basicApi.create('p_quote_requests', {
+                properties: {
+                    ...quoteRequestProperties
+                },
+            });
+
+            await hubspotClient.crm.associations.v4.basicApi.create(
+                'contacts',
+                newContact?.id,
+                'p_quote_requests',
+                quoteRequest?.id,
+                [
+                    {
+                        associationCategory: 'USER_DEFINED',
+                        associationTypeId: 36
+                    }
+                ]
+            );
+        }
+
+    } catch (error) {
+        console.error('Error submitting quote request:', error);
+        res.status(500).send('Error submitting quote request');
+    }
+
 });
 
 app.post('/submit-contact', async (req, res) => {
@@ -38,10 +121,14 @@ app.post('/submit-contact', async (req, res) => {
                 return res.status(500).send('Error creating note for existing contact');
             }
 
+            // In order to send confirmation email via workflow, we need to set the contact to "marketing"
+            // This should only be done if the contact explicitly opts in to marketing communications
             await hubspotClient.crm.contacts.basicApi.update(existingContact.results[0].id, contactFormSubmittedAt());
             res.redirect('/');
         }
         else {
+            // In order to send confirmation email via workflow, we need to set the contact to "marketing"
+            // This should only be done if the contact explicitly opts in to marketing communications
             const contactInput = {
                 properties: {
                     firstname: firstName,
@@ -93,6 +180,52 @@ const createNoteInput = (contactId, message) => {
 
     return noteInput;
 };
+
+const getContactByEmail = async (email) => {
+    return await hubspotClient.crm.contacts.searchApi.doSearch({
+        filterGroups: [{
+            filters: [
+                { propertyName: 'email', operator: 'EQ', value: email }
+            ]
+        }],
+    });
+};
+
+/**
+ * Extracts form options from HubSpot schema properties
+ * @param {Object} schema - The HubSpot schema object
+ * @returns {Object} Object containing mapped options for size, stories, and location
+ */
+function extractFormOptions(schema) {
+    const sizeProperty = schema.properties.find(prop => prop.label === 'Size');
+    const storiesProperty = schema.properties.find(prop => prop.label === 'Stories');
+    const locationProperty = schema.properties.find(prop => prop.label === 'Location');
+
+    // Map options to include both value and label for the dropdowns
+    const sizeOptions = sizeProperty && sizeProperty.options ?
+        sizeProperty.options.map(option => ({
+            value: option.value,
+            label: option.label
+        })) : [];
+
+    const storiesOptions = storiesProperty && storiesProperty.options ?
+        storiesProperty.options.map(option => ({
+            value: option.value,
+            label: option.label
+        })) : [];
+
+    const locationOptions = locationProperty && locationProperty.options ?
+        locationProperty.options.map(option => ({
+            value: option.value,
+            label: option.label
+        })) : [];
+
+    return {
+        size: sizeOptions,
+        stories: storiesOptions,
+        location: locationOptions
+    };
+}
 
 // Start the server
 app.listen(3000, () => console.log('Listening on http://localhost:3000'));

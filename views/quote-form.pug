@@ -1,0 +1,52 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Quote Request | HubSpot CRM Integration
+    link(rel="stylesheet", href="/css/styles.css")
+  body
+    h1 Quote Request Form
+    form(action="/submit-quote" method="POST")
+      .form-group
+        label(for="firstName") First Name
+        input#firstName(type="text" name="firstName" required placeholder="Enter your first name")
+      
+      .form-group
+        label(for="lastName") Last Name
+        input#lastName(type="text" name="lastName" required placeholder="Enter your last name")
+      
+      .form-group
+        label(for="email") Email
+        input#email(type="email" name="email" required placeholder="Enter your email address")
+      
+      .form-group 
+        label(for="location") Location
+        select#location(name="location" required)
+          option(value="") -- Select Location --
+          if options && options.location && options.location.length > 0
+            each option in options.location
+              option(value=option.value)= option.label
+      
+      .form-group
+        label(for="size") Size
+        select#size(name="size" required)
+          option(value="") -- Select Size --
+          if options && options.size && options.size.length > 0
+            each option in options.size
+              option(value=option.value)= option.label
+      
+      .form-group
+        label(for="stories") Number of Stories
+        select#stories(name="stories" required)
+          option(value="") -- Select Number of Stories --
+          if options && options.stories && options.stories.length > 0
+            each option in options.stories
+              option(value=option.value)= option.label
+      
+      .form-group
+        label(for="additionalInfo") Additional Information
+        textarea#additionalInfo(name="additionalInfo" placeholder="Please provide any additional details for your quote request...")
+      
+      .form-group
+        button(type="submit") Request Quote
