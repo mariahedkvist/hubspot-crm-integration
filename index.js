@@ -37,6 +37,8 @@ app.post('/submit-contact', async (req, res) => {
                 console.error('Failed to create note for existing contact');
                 return res.status(500).send('Error creating note for existing contact');
             }
+
+            await hubspotClient.crm.contacts.basicApi.update(existingContact.results[0].id, contactFormSubmittedAt());
             res.redirect('/');
         }
         else {
@@ -58,6 +60,13 @@ app.post('/submit-contact', async (req, res) => {
         res.status(500).send('Error submitting contact request');
     }
 });
+
+const contactFormSubmittedAt = () => {
+    const properties = {
+        contact_form_submitted_at: new Date().toISOString(),
+    };
+    return { properties };
+};
 
 const createNoteInput = (contactId, message) => {
     const noteProperties = {
