@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/mariahedkvist/hubspot-crm-integration#readme",
   "dependencies": {
+    "@hubspot/api-client": "^13.0.0",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
