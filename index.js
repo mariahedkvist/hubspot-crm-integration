@@ -45,26 +45,7 @@ app.post('/submit-quote', async (req, res) => {
         };
 
         if (existingContact?.results?.length > 0) {
-            const quoteRequest = await hubspotClient.crm.objects.basicApi.create('p_quote_requests', {
-                properties: {
-                    ...quoteRequestProperties
-                },
-            });
-            console.log('Created quote request:', quoteRequest.id);
-            console.log('Existing contact ID:', existingContact.results[0].id);
-            await hubspotClient.crm.associations.v4.basicApi.create(
-                'contacts',
-                existingContact?.results[0].id,
-                'p_quote_requests',
-                quoteRequest?.id,
-                [
-                    {
-
-                        associationCategory: 'USER_DEFINED',
-                        associationTypeId: 36
-                    }
-                ]
-            );
+            await createQuoteRequest(existingContact.results[0].id, quoteRequestProperties);
         }
         else {
             const contactInput = {
@@ -76,24 +57,7 @@ app.post('/submit-quote', async (req, res) => {
             };
 
             const newContact = await hubspotClient.crm.contacts.basicApi.create(contactInput);
-            const quoteRequest = await hubspotClient.crm.objects.basicApi.create('p_quote_requests', {
-                properties: {
-                    ...quoteRequestProperties
-                },
-            });
-
-            await hubspotClient.crm.associations.v4.basicApi.create(
-                'contacts',
-                newContact?.id,
-                'p_quote_requests',
-                quoteRequest?.id,
-                [
-                    {
-                        associationCategory: 'USER_DEFINED',
-                        associationTypeId: 36
-                    }
-                ]
-            );
+            await createQuoteRequest(newContact.id, quoteRequestProperties);
         }
 
     } catch (error) {
@@ -147,6 +111,26 @@ app.post('/submit-contact', async (req, res) => {
         res.status(500).send('Error submitting contact request');
     }
 });
+
+const createQuoteRequest = async (contactId, quoteRequestProperties) => {
+    const quoteRequest = await hubspotClient.crm.objects.basicApi.create('p_quote_requests', {
+        properties: {
+            ...quoteRequestProperties
+        },
+    });
+    await hubspotClient.crm.associations.v4.basicApi.create(
+        'contacts',
+        contactId,
+        'p_quote_requests',
+        quoteRequest?.id,
+        [
+            {
+                associationCategory: 'USER_DEFINED',
+                associationTypeId: 36
+            }
+        ]
+    );
+}
 
 const contactFormSubmittedAt = () => {
     const properties = {
