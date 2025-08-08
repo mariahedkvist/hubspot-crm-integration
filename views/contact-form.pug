@@ -1,0 +1,38 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Contact Form | HubSpot CRM Integration
+    link(rel="stylesheet", href="/css/styles.css")
+  body
+    h1 Contact Form
+    form(action="/submit-contact" method="POST")
+      .form-group
+        label(for="firstName") First Name
+        input#firstName(type="text" name="firstName" required)
+      
+      .form-group
+        label(for="lastName") Last Name
+        input#lastName(type="text" name="lastName" required)
+      
+      .form-group
+        label(for="email") Email
+        input#email(type="email" name="email" required)
+      
+      .form-group
+        label(for="phone") Phone Number
+        input#phone(type="tel" name="phone")
+      
+      .form-group
+        label(for="message") Message
+        textarea#message(name="message" placeholder="Write your message here...")
+      
+      .form-group
+        label(for="category") Category
+        select#category(name="category")
+          option(value="") -- Select a category --
+          // Dropdown options will be dynamically populated later
+      
+      .form-group
+        button(type="submit") Submit
