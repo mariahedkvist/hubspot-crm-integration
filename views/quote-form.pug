@@ -34,7 +34,7 @@ html(lang="en")
           option(value="") -- Select Size --
           if options && options.size && options.size.length > 0
             each option in options.size
-              option(value=option.value)= option.label
+              option(value=option.value)= `${option.label} m²`
       
       .form-group
         label(for="stories") Number of Stories
